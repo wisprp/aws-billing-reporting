@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
@@ -23,6 +24,10 @@ type SlackRequestBody struct {
 }
 
 func main() {
+	lambda.Start(SendReport)
+}
+
+func SendReport() {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2")},
