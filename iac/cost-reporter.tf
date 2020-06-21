@@ -1,3 +1,10 @@
+variable "SLACK_WEBHOOK_URL" {
+  type = string
+}
+variable "BILLING_IGNORE_LIST" { 
+  type = string
+}
+
 resource "aws_iam_policy" "tf_billing_policy" {
   name        = "tf_billing_policy"
   path        = "/"
@@ -70,8 +77,8 @@ resource "aws_lambda_function" "billing_reporting_lambda" {
 
   environment {
     variables = {
-      SLACK_WEBHOOK_URL = ""
-      BILLING_IGNORE_LIST = ""
+      SLACK_WEBHOOK_URL = var.SLACK_WEBHOOK_URL
+      BILLING_IGNORE_LIST = var.BILLING_IGNORE_LIST
     }
   }
 }
