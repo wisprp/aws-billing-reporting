@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
@@ -22,17 +23,31 @@ type SlackRequestBody struct {
 	Text string `json:"text"`
 }
 
+type BillingRange struct {
+	thisMonth, lastMonth time.Time
+}
+
+func (br *BillingRange) DateRangeString() string {
+	return br.lastMonthString() + " - " + br.thisMonthString()
+}
+
+func (br *BillingRange) thisMonthString() string {
+	return br.thisMonth.Format("2006-01-02")
+}
+
+func (br *BillingRange) lastMonthString() string {
+	return br.lastMonth.Format("2006-01-02")
+}
+
 func main() {
+	lambda.Start(SendReport)
+}
+
+func SendReport() {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2")},
 	)
-
-	// Prepare the time strings
-	thisMonth := now.BeginningOfMonth()
-	lastMonth := thisMonth.AddDate(0, -1, 0)
-	tEnd := thisMonth.Format("2006-01-02")
-	tStart := lastMonth.Format("2006-01-02")
 
 	// Create costexplorer client
 	client := costexplorer.New(sess)
@@ -41,33 +56,19 @@ func main() {
 		Type: aws.String("TAG"),
 		Key:  aws.String("Billing")}
 
+	BillingDates := BillingRange{
+		thisMonth: now.BeginningOfMonth(),
+		lastMonth: now.BeginningOfMonth().AddDate(0, -1, 0)}
 	// Specify the details of the instance that you want to create.
 	resp, err := client.GetCostAndUsage(&costexplorer.GetCostAndUsageInput{
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("BLENDED_COST")},
 		GroupBy:     []*costexplorer.GroupDefinition{gdByTag},
 		TimePeriod: &costexplorer.DateInterval{
-			End:   aws.String(tEnd),
-			Start: aws.String(tStart)}})
+			End:   aws.String(BillingDates.thisMonthString()),
+			Start: aws.String(BillingDates.lastMonthString())}})
 
-	SlackMessage := tStart + " - " + tEnd + "\nProjects expences, $ (AWS): \n"
-	for i, d := range resp.ResultsByTime[0].Groups {
-		if i > 0 {
-			// go throught keys and select them if they aren't belong to ignore list / nil
-			if d.Keys != nil && !isIgnored(d.Keys[0]) {
-				// round up to cents the instances cost
-				projectCostsFloat, err := strconv.ParseFloat(*d.Metrics["BlendedCost"].Amount, 32)
-				projectCosts := fmt.Sprintf("%.2f", projectCostsFloat)
-				projectName := *d.Keys[0]
-				SlackMessage += projectName[8:] + ": " + projectCosts + "\n"
-
-				if err != nil {
-					fmt.Println("Some error happened ", err)
-					return
-				}
-			}
-		}
-	}
+	SlackMessage := BuildSlackMessage(resp)
 
 	if err != nil {
 		fmt.Println("Some error happened ", err)
@@ -118,5 +119,34 @@ func isIgnored(str *string) bool {
 		}
 	}
 	return false
+
+}
+
+func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) string {
+
+	BillingDates := BillingRange{
+		thisMonth: now.BeginningOfMonth(),
+		lastMonth: now.BeginningOfMonth().AddDate(0, -1, 0)}
+
+	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expences (AWS): \n"
+	fmt.Println(AwsBillingResponse)
+	for i, d := range AwsBillingResponse.ResultsByTime[0].Groups {
+		if i > 0 {
+			// go throught keys and select them if they aren't belong to ignore list / nil
+			if d.Keys != nil && !isIgnored(d.Keys[0]) {
+				// round up to cents the instances cost
+				projectCostsFloat, err := strconv.ParseFloat(*d.Metrics["BlendedCost"].Amount, 32)
+				projectCosts := fmt.Sprintf("%.2f", projectCostsFloat)
+				projectName := *d.Keys[0]
+				SlackMessage += "• " + projectName[8:] + ": $" + projectCosts + "\n"
+
+				if err != nil {
+					fmt.Println("Some error happened ", err)
+					return "err"
+				}
+			}
+		}
+	}
+	return SlackMessage
 
 }
