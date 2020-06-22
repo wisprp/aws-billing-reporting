@@ -5,7 +5,8 @@ variable "BILLING_IGNORE_LIST" {
   type = string
 }
 
-# Compile and archive lambda via local-exec provisioner
+# Compile and archive lambda via local-exec provisioner 
+# (will not force recreate package, need to find a way to force it)
 resource "null_resource" "compile_app_and_archive" {
   provisioner "local-exec" {
     command = "cd .. && GOOS=linux go build main.go && zip main.zip main"
