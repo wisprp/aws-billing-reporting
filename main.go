@@ -28,7 +28,7 @@ type BillingRange struct {
 }
 
 func (br *BillingRange) DateRangeString() string {
-	return br.thisMonthString() + " - " + br.lastMonthString()
+	return br.lastMonthString() + " - " + br.thisMonthString()
 }
 
 func (br *BillingRange) thisMonthString() string {
@@ -128,7 +128,7 @@ func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) s
 		thisMonth: now.BeginningOfMonth(),
 		lastMonth: now.BeginningOfMonth().AddDate(0, -1, 0)}
 
-	SlackMessage := BillingDates.DateRangeString() + "\nProjects expences, $ (AWS): \n"
+	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expences (AWS): \n"
 	fmt.Println(AwsBillingResponse)
 	for i, d := range AwsBillingResponse.ResultsByTime[0].Groups {
 		if i > 0 {
@@ -138,7 +138,7 @@ func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) s
 				projectCostsFloat, err := strconv.ParseFloat(*d.Metrics["BlendedCost"].Amount, 32)
 				projectCosts := fmt.Sprintf("%.2f", projectCostsFloat)
 				projectName := *d.Keys[0]
-				SlackMessage += projectName[8:] + ": " + projectCosts + "\n"
+				SlackMessage += "• " + projectName[8:] + ": $" + projectCosts + "\n"
 
 				if err != nil {
 					fmt.Println("Some error happened ", err)
