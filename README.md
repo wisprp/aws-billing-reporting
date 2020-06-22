@@ -26,9 +26,9 @@ Schedule can be adjusted by modifying `schedule_expression` in `cost-reporter.tf
 ### Slack notification format
 
 ```
-2020-06-01 - 2020-05-01
-Projects expences, $ (AWS):
-project_1: 232.32
-project_x: 140.96
-project_foo: 102.2
+2020-05-01 - 2020-06-01
+Projects hardware expences (AWS):
+project_1: $232.32
+project_x: $140.96
+project_foo: $102.2
 ```
