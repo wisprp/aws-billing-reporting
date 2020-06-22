@@ -92,7 +92,7 @@ resource "aws_lambda_function" "billing_reporting_lambda" {
 }
 
 resource "aws_cloudwatch_event_rule" "every_1st_day_of_month" {
-    name = "every-five-minutes"
+    name = "every_1st_day_of_month"
     description = "Fires every 1st day of the month"
     schedule_expression = "cron(1 8 1 * ? *)"
 }
