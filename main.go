@@ -28,7 +28,7 @@ type BillingRange struct {
 }
 
 func (br *BillingRange) DateRangeString() string {
-	return br.thisMonthString() + "-" + br.lastMonthString()
+	return br.thisMonthString() + " - " + br.lastMonthString()
 }
 
 func (br *BillingRange) thisMonthString() string {
