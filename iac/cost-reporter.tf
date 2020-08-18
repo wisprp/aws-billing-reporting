@@ -7,10 +7,21 @@ variable "BILLING_IGNORE_LIST" {
 
 # Compile and archive lambda via local-exec provisioner 
 # (will not force recreate package, need to find a way to force it)
-resource "null_resource" "compile_app_and_archive" {
+resource "null_resource" "build_lambda" {
   provisioner "local-exec" {
-    command = "cd .. && GOOS=linux go build main.go && zip main.zip main"
+    working_dir = "../"
+    command = "GOOS=linux go build main.go"
   }
+}
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "../main"
+  output_path = "../main.zip"
+
+  depends_on = [
+    null_resource.build_lambda
+  ]
 }
 
 resource "aws_iam_policy" "tf_billing_policy" {
@@ -79,7 +90,8 @@ resource "aws_lambda_function" "billing_reporting_lambda" {
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-  source_code_hash = filebase64sha256("../main.zip")
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
 
   runtime = "go1.x"
 
