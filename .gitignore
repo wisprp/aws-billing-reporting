@@ -29,3 +29,7 @@ override.tf.json
 # example: *tfplan*
 
 .env
+
+# ignore compiled and archived application
+main
+main.zip
