@@ -101,11 +101,20 @@ func SendSlackNotification(webhookUrl string, msg string) error {
 		return err
 	}
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	if buf.String() != "ok" {
-		return errors.New("Non-ok response returned from Slack")
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if buf.String() != "ok" {
+		return errors.New("non-ok response returned from Slack")
+	}
+
 	return nil
 }
 
