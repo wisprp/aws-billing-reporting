@@ -19,14 +19,17 @@ import (
 	"github.com/jinzhu/now"
 )
 
+// SlackRequestBody : Slack request body text
 type SlackRequestBody struct {
 	Text string `json:"text"`
 }
 
+// BillingRange : Time range for data lookup
 type BillingRange struct {
 	thisMonth, lastMonth time.Time
 }
 
+// DateRangeString : Prepares with dates range
 func (br *BillingRange) DateRangeString() string {
 	return br.lastMonthString() + " - " + br.thisMonthString()
 }
@@ -43,11 +46,17 @@ func main() {
 	lambda.Start(SendReport)
 }
 
+// SendReport : Connect to the cloud provider, get data, send report and process results
 func SendReport() {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2")},
 	)
+
+	if err != nil {
+		fmt.Println("Can't create new AWS session ", err)
+		return
+	}
 
 	// Create costexplorer client
 	client := costexplorer.New(sess)
@@ -76,8 +85,8 @@ func SendReport() {
 	}
 
 	// Send Slack notification usign environmental variable
-	webhookUrl := os.Getenv("SLACK_WEBHOOK_URL")
-	err = SendSlackNotification(webhookUrl, SlackMessage)
+	webhookURL := os.Getenv("SLACK_WEBHOOK_URL")
+	err = SendSlackNotification(webhookURL, SlackMessage)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,10 +94,10 @@ func SendReport() {
 
 // SendSlackNotification will post to an 'Incoming Webook' url setup in Slack Apps. It accepts
 // some text and the slack channel is saved within Slack.
-func SendSlackNotification(webhookUrl string, msg string) error {
+func SendSlackNotification(webhookURL string, msg string) error {
 
 	slackBody, _ := json.Marshal(SlackRequestBody{Text: msg})
-	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(slackBody))
+	req, err := http.NewRequest(http.MethodPost, webhookURL, bytes.NewBuffer(slackBody))
 	if err != nil {
 		return err
 	}
@@ -118,7 +127,7 @@ func SendSlackNotification(webhookUrl string, msg string) error {
 	return nil
 }
 
-// function for checkin if the projectin ignorelist
+// function for checkin if the project in ignorelist
 func isIgnored(str *string) bool {
 	// todo: read arr list from env vars
 	ignoreList := strings.Split(os.Getenv("BILLING_IGNORE_LIST"), ",")
@@ -131,17 +140,18 @@ func isIgnored(str *string) bool {
 
 }
 
+// BuildSlackMessage : Prepares Slack body message based on data from AWS billing
 func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) string {
 
 	BillingDates := BillingRange{
 		thisMonth: now.BeginningOfMonth(),
 		lastMonth: now.BeginningOfMonth().AddDate(0, -1, 0)}
 
-	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expences (AWS): \n"
+	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expenses (AWS): \n"
 	fmt.Println(AwsBillingResponse)
 	for i, d := range AwsBillingResponse.ResultsByTime[0].Groups {
 		if i > 0 {
-			// go throught keys and select them if they aren't belong to ignore list / nil
+			// go through keys and select them if they aren't belong to ignore list / nil
 			if d.Keys != nil && !isIgnored(d.Keys[0]) {
 				// round up to cents the instances cost
 				projectCostsFloat, err := strconv.ParseFloat(*d.Metrics["BlendedCost"].Amount, 32)

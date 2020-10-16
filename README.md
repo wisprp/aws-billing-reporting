@@ -1,4 +1,6 @@
 # aws-billing-reporting
+[![Go Report Card](https://goreportcard.com/badge/github.com/wisprp/aws-billing-reporting)](https://goreportcard.com/report/github.com/wisprp/aws-billing-reporting)
+
 Small serverless service for monthly AWS usage reporting
 
 The service sends notifications in Slack channel with aggregated costs for `Billing` tag in AWS
