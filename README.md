@@ -1,5 +1,5 @@
 # aws-billing-reporting
-[![Go Report Card](https://goreportcard.com/badge/github.com/wisprp/aws-billing-reporting)](https://github.com/wisprp/aws-billing-reporting)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wisprp/aws-billing-reporting)](https://goreportcard.com/report/github.com/wisprp/aws-billing-reporting)
 
 Small serverless service for monthly AWS usage reporting
 
