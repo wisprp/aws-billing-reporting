@@ -118,7 +118,7 @@ func SendSlackNotification(webhookUrl string, msg string) error {
 	return nil
 }
 
-// function for checkin if the projectin ignorelist
+// function for checkin if the project in ignorelist
 func isIgnored(str *string) bool {
 	// todo: read arr list from env vars
 	ignoreList := strings.Split(os.Getenv("BILLING_IGNORE_LIST"), ",")
@@ -137,11 +137,11 @@ func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) s
 		thisMonth: now.BeginningOfMonth(),
 		lastMonth: now.BeginningOfMonth().AddDate(0, -1, 0)}
 
-	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expences (AWS): \n"
+	SlackMessage := BillingDates.DateRangeString() + "\nProjects hardware expenses (AWS): \n"
 	fmt.Println(AwsBillingResponse)
 	for i, d := range AwsBillingResponse.ResultsByTime[0].Groups {
 		if i > 0 {
-			// go throught keys and select them if they aren't belong to ignore list / nil
+			// go through keys and select them if they aren't belong to ignore list / nil
 			if d.Keys != nil && !isIgnored(d.Keys[0]) {
 				// round up to cents the instances cost
 				projectCostsFloat, err := strconv.ParseFloat(*d.Metrics["BlendedCost"].Amount, 32)
