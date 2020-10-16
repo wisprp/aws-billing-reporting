@@ -19,14 +19,17 @@ import (
 	"github.com/jinzhu/now"
 )
 
+// SlackRequestBody : Slack request body text
 type SlackRequestBody struct {
 	Text string `json:"text"`
 }
 
+// BillingRange : Time range for data lookup
 type BillingRange struct {
 	thisMonth, lastMonth time.Time
 }
 
+// DateRangeString : Prepares with dates range
 func (br *BillingRange) DateRangeString() string {
 	return br.lastMonthString() + " - " + br.thisMonthString()
 }
@@ -43,11 +46,17 @@ func main() {
 	lambda.Start(SendReport)
 }
 
+// SendReport : Connect to the cloud provider, get data, send report and process results
 func SendReport() {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2")},
 	)
+
+	if err != nil {
+		fmt.Println("Can't create new AWS session ", err)
+		return
+	}
 
 	// Create costexplorer client
 	client := costexplorer.New(sess)
@@ -76,8 +85,8 @@ func SendReport() {
 	}
 
 	// Send Slack notification usign environmental variable
-	webhookUrl := os.Getenv("SLACK_WEBHOOK_URL")
-	err = SendSlackNotification(webhookUrl, SlackMessage)
+	webhookURL := os.Getenv("SLACK_WEBHOOK_URL")
+	err = SendSlackNotification(webhookURL, SlackMessage)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,10 +94,10 @@ func SendReport() {
 
 // SendSlackNotification will post to an 'Incoming Webook' url setup in Slack Apps. It accepts
 // some text and the slack channel is saved within Slack.
-func SendSlackNotification(webhookUrl string, msg string) error {
+func SendSlackNotification(webhookURL string, msg string) error {
 
 	slackBody, _ := json.Marshal(SlackRequestBody{Text: msg})
-	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(slackBody))
+	req, err := http.NewRequest(http.MethodPost, webhookURL, bytes.NewBuffer(slackBody))
 	if err != nil {
 		return err
 	}
@@ -131,6 +140,7 @@ func isIgnored(str *string) bool {
 
 }
 
+// BuildSlackMessage : Prepares Slack body message based on data from AWS billing
 func BuildSlackMessage(AwsBillingResponse *costexplorer.GetCostAndUsageOutput) string {
 
 	BillingDates := BillingRange{
